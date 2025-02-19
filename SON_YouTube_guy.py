@@ -13,22 +13,24 @@ idisplay.display(idisplay.Audio(waveform, rate=sr * 2))
 
 
 
-#direct pitch shift
+# direct pitch shift
 # OLA
-anls_win_len = 5000 # / 44100 = 113.3786848 ms
-anls_hop_len = 2000 # / 44100 = 45.35147392 ms
-scaling = 2 ** (5 / 12)  # change 5 up or down to get pitch up or down
+# These define how we segment the original signal for analysis:
+anls_win_len = 5000     # / 44100 = 113.3786848 ms
+anls_hop_len = 2000     # / 44100 = 45.35147392 ms
+# This determines how much the synthesis window length is scaled relative to the analysis window length:
+scaling = 2 ** (5 / 12)      # change 5 up or down to get pitch up or down
 synth_hop_len = anls_hop_len
-synth_win_len = int(anls_win_len // scaling)
-win_f = np.hanning(synth_win_len)
+synth_win_len = int(anls_win_len // scaling)    # This shortens the window size based on the scaling factor.
+win_f = np.hanning(synth_win_len)    # A Hanning window is used for smooth overlap-add synthesis.
 
-new_waveform_len = int(np.ceil(og_len / anls_hop_len) * synth_hop_len) + synth_win_len
+new_waveform_len = int(np.ceil(og_len / anls_hop_len) * synth_hop_len) + synth_win_len    # Calculates the length of the output waveform based on the number of windows needed to process og_len.
 new_waveform = np.zeros((channels, new_waveform_len)) # stereo audio
-new_scales = np.zeros(new_waveform_len)
+new_scales = np.zeros(new_waveform_len)    # Stores windowing weights for normalization.
 
 # loop through windows
 for i in range(0, og_len, anls_hop_len):
-    clipped_len = min(i + anls_win_len, og_len - 2) - i
+    clipped_len = min(i + anls_win_len, og_len - 2) - i    # Ensures the window does not exceed the original signal length.
     
     # stretch to synth_win_len. see how this interpolation could lose information
     idxs = np.linspace(i, i + clipped_len, synth_win_len)
@@ -41,9 +43,9 @@ for i in range(0, og_len, anls_hop_len):
     # add up windowing weights for normalization
     new_scales[i:i + synth_win_len] += win_f[:]
 
-new_waveform = new_waveform / np.where(new_scales == 0, 1, new_scales)
+new_waveform = new_waveform / np.where(new_scales == 0, 1, new_scales)    # This normalizes the overlapping windows.
 
-idisplay.display(idisplay.Audio(new_waveform, rate=sr))
+idisplay.display(idisplay.Audio(new_waveform, rate=sr))    #This plays the modified audio.
 
 
 

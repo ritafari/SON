@@ -1,9 +1,8 @@
-
 #include <Audio.h>
 
 // Audio objects
 AudioInputI2S       micInput;      // I2S microphone input
-AudioEffectGranular granular;      // Pitch shifting effect =>  real-time pitch shifting on Teensy 4.0
+AudioEffectGranular granular;      // Pitch shifting effect => real-time pitch shifting on Teensy 4.0
 AudioOutputI2S      audioOutput;   // I2S output to DAC
 
 // Potentiometer objects
@@ -24,17 +23,24 @@ void setup() {
     audioShield.inputSelect(AUDIO_INPUT_MIC);  // Select microphone input
     audioShield.micGain(20);  // Adjust mic gain as needed
 
-    // Configure granular effect for pitch shifting
-    granular.beginPitchShift(1.3348);  // 5 semitone pitch shift (2^(5/12))
+    // Start granular effect (buffer length: 250ms)
+    granular.begin(250);
+
+    // Set initial pitch shift (5 semitones up)
+    granular.beginPitchShift(1.3348);  // 2^(5/12) for 5 semitones
 }
 
 void loop() {
-    // The pitch-shifted audio is processed in real time.
-  int potValue = analogRead(pitchControlPin);  // Read potentiometer
-    pitchFactor = 0.5 + (potValue / 1023.0) * 2.0;  // Scale to range (0.5x to 2.5x)
+    // Read potentiometer (0-4095 for Teensy 4.0)
+    int potValue = analogRead(pitchControlPin);
     
-    granular.setPitch(pitchFactor);  // Apply pitch shift
+    // Map to pitch shift range (0.5x to 2.5x)
+    pitchFactor = 0.5 + (potValue / 4095.0) * 2.0;  
+    
+    // Apply new pitch shift value
+    granular.setPitch(pitchFactor);
 }
+
 
 
 // If you still want to implement something closer to your Python method, you need to:

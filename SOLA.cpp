@@ -33,20 +33,18 @@ void setup() {
     audioShield.unmuteLineout();
 
     granular.begin(granularMemory, GRANULAR_MEMORY_SIZE);
+    granular.beginPitchShift(1.0);  // Start with no pitch shift
+
     Serial.println("Setup complete.");
 }
 
 void loop() {
-    // Set mic volume
-    int micGainLevel = 20;
-    audioShield.micGain(micGainLevel);
-
-    // Read potentiometer (0-4095) and map to pitch shift range (0.5x to 2.0x)
+    // Read potentiometer and map to pitch range (0.5x to 2.0x)
     int potValue = analogRead(pitchControlPin);
-    pitchFactor = 0.5 + (potValue / 4095.0) * 1.5;
+    pitchFactor = map(potValue, 0, 1023, 50, 200) / 100.0;  // Range: 0.5x to 2.0x
 
-    // Apply pitch shift
-    granular.beginPitchShift(pitchFactor);
+    // Apply pitch shift without restarting the effect
+    granular.setSpeed(pitchFactor);
 
     // Debugging output
     Serial.print("Pitch Factor: ");

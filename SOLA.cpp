@@ -1,46 +1,50 @@
 #include <Audio.h>
+#define GRANULAR_MEMORY_SIZE 12800
 
 // Audio objects
-AudioInputI2S       micInput;      // I2S microphone input
-AudioEffectGranular granular;      // Pitch shifting effect => real-time pitch shifting on Teensy 4.0
-AudioOutputI2S      audioOutput;   // I2S output to DAC
+AudioInputI2S       micInput;
+AudioEffectGranular granular;
+AudioOutputI2S      audioOutput;
 
-// Potentiometer objects
-int pitchControlPin = A1;  // Potentiometer connected to analog pin A1
-float pitchFactor = 1.0;   // Default pitch shift (1.0 = no change)
+// Potentiometer
+int pitchControlPin = A1;
+float pitchFactor = 1.0;
 
-// Audio connections (Microphone → Granular Effect → Output)
+// Audio connections
 AudioConnection patchCord1(micInput, 0, granular, 0);
 AudioConnection patchCord2(granular, 0, audioOutput, 0);
 AudioConnection patchCord3(granular, 0, audioOutput, 1);
 
-AudioControlSGTL5000 audioShield;  // Audio control for Teensy
+AudioControlSGTL5000 audioShield;
+
+int16_t granularMemory[GRANULAR_MEMORY_SIZE];
 
 void setup() {
-    // Initialize audio hardware
-    AudioMemory(12);  // Allocate memory for audio processing
+    Serial.begin(9600); // Initialize serial communication
+    
+    AudioMemory(60); // Increased memory allocation
     audioShield.enable();
-    audioShield.inputSelect(AUDIO_INPUT_MIC);  // Select microphone input
-    audioShield.micGain(20);  // Adjust mic gain as needed
+    audioShield.inputSelect(AUDIO_INPUT_MIC);
+    audioShield.micGain(30);
 
-    // Start granular effect (buffer length: 250ms)
-    granular.begin(250);
-
-    // Set initial pitch shift (5 semitones up)
-    granular.beginPitchShift(1.3348);  // 2^(5/12) for 5 semitones
+    granular.begin(granularMemory, GRANULAR_MEMORY_SIZE);
+    granular.beginPitchShift(1.0); // Start with no pitch shift
 }
 
 void loop() {
-    // Read potentiometer (0-4095 for Teensy 4.0)
+    // Read potentiometer and map to pitch factor
     int potValue = analogRead(pitchControlPin);
+    pitchFactor = 0.5 + (potValue / 4095.0) * 2.0;
     
-    // Map to pitch shift range (0.5x to 2.5x)
-    pitchFactor = 0.5 + (potValue / 4095.0) * 2.0;  
-    
-    // Apply new pitch shift value
-    granular.setPitch(pitchFactor);
-}
+    // Apply pitch shift continuously
+    granular.setSpeed(pitchFactor);
 
+    // Debug output
+    Serial.print("Pitch Factor: ");
+    Serial.println(pitchFactor);
+    
+    delay(50); // Reduced delay for smoother control
+}
 
 
 // If you still want to implement something closer to your Python method, you need to:
